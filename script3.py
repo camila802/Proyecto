@@ -151,3 +151,66 @@ ttk.Button(root, text="Calculadora Gráfica", command=abrir_calculadora_grafica)
 ttk.Button(root, text="Ver Historial", command=mostrar_historial).pack(pady=10)
 
 root.mainloop()
+
+##2
+
+import tkinter as tk 
+from tkinter import ttk 
+
+root = tk.Tk() 
+root.title("Calculadora Tkinter") 
+root.geometry("400x300") 
+
+notebook = ttk.Notebook(root) 
+notebook.pack(expand=True, fill="both") 
+
+frame_calc = tk.Frame(notebook) 
+frame_conv = tk.Frame(notebook) 
+frame_hist = tk.Frame(notebook) 
+
+notebook.add(frame_calc, text="Calculadora") 
+notebook.add(frame_conv, text="Conversor") 
+notebook.add(frame_hist, text="Historial") 
+
+historial = [] 
+
+tk.Label(frame_calc, text="Número 1:").pack() 
+entry1 = tk.Entry(frame_calc)
+entry1.pack()
+
+tk.Label(frame_calc, text="Número 2:").pack() 
+entry2 = tk.Entry(frame_calc) 
+entry2.pack() 
+
+label_resultado = tk.Label(frame_calc, text="Resultado:") 
+label_resultado.pack() 
+
+def calcular(operacion):
+    try: 
+        num1, num2 = float(entry1.get()), float(entry2.get())
+        resultado = eval(f"{num1} {operacion} {num2}") if operacion != "/" or num2 != 0 else "Error"
+        label_resultado.config(text=f"Resultado: {resultado}") 
+        historial.append(f"{num1} {operacion} {num2} = {resultado}")
+    except ValueError: 
+        label_resultado.config(text="Ingrese valores válidos") 
+for op in ["+", "-", "*", "/"]: 
+    tk.Button(frame_calc, text=op, command=lambda o=op: calcular(o)).pack(side="left", padx=5) 
+tk.Label(frame_conv, text="Metros:").pack() 
+entry_metros = tk.Entry(frame_conv) 
+entry_metros.pack() 
+label_conversion = tk.Label(frame_conv, text="0 km") 
+label_conversion.pack() 
+def convertir(): 
+    try: 
+        km = float(entry_metros.get()) / 1000 
+        label_conversion.config(text=f"{km} km") 
+    except ValueError: label_conversion.config(text="Ingrese un número válido") 
+tk.Button(frame_conv, text="Convertir", command=convertir).pack() 
+tk.Label(frame_hist, text="Historial de operaciones:").pack() 
+text_historial = tk.Text(frame_hist, height=10, width=40) 
+text_historial.pack() 
+def actualizar_historial(): 
+    text_historial.delete("1.0", tk.END) 
+    text_historial.insert(tk.END, "\n".join(historial)) 
+tk.Button(frame_hist, text="Actualizar", command=actualizar_historial).pack()
+root.mainloop() 
