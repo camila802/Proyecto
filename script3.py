@@ -1,4 +1,4 @@
-import firebase_admin
+import firebase_admin 
 from firebase_admin import credentials, db
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -7,105 +7,80 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-
-cred = credentials.Certificate("ruta/al/archivo.json")  # Ubicacion
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://tu-proyecto.firebaseio.com'  # Link
-})
-
+# Inicializar Firebase
+cred = credentials.Certificate("C:/Users/celes/OneDrive/Escritorio/script3-35624-firebase-adminsdk-fbsvc-d2b33dcbe6.json")
+firebase_admin.initialize_app(cred, {'databaseURL': 'https://script3-35624-default-rtdb.firebaseio.com/'})
 ref = db.reference('/historial')
 
 def guardar_operacion(operacion, resultado):
-    """Guarda una operación en Firebase."""
-    timestamp = int(time.time() * 1000)
-    nueva_operacion_ref = ref.push({
-        'operacion': operacion,
-        'resultado': resultado,
-        'timestamp': timestamp
-    })
-    print(f"Operación guardada con ID: {nueva_operacion_ref.key}")
+    ref.push({'operacion': operacion, 'resultado': resultado, 'timestamp': int(time.time() * 1000)})
 
-#Funciones
-def abrir_calculadora_basica():
-    """Calculadora con operaciones básicas."""
-    def click_boton(valor):
-        entrada.set(entrada.get() + str(valor))
-
-    def calcular():
-        try:
-            operacion = entrada.get()
-            resultado = eval(operacion)
-            resultado_var.set(resultado)
-            guardar_operacion(operacion, resultado)
-        except:
-            messagebox.showerror("Error", "Operación no válida")
-
+def crear_ventana(titulo, tamaño="300x400"):
     ventana = tk.Toplevel(root)
-    ventana.title("Calculadora Básica")
-    entrada = tk.StringVar()
-    resultado_var = tk.StringVar()
-
-    tk.Entry(ventana, textvariable=entrada, font=("Arial", 18), width=15, justify="right").grid(row=0, column=0, columnspan=4)
-    tk.Label(ventana, textvariable=resultado_var, font=("Arial", 18), bg="lightgray", width=15).grid(row=1, column=0, columnspan=4)
-
-    botones = [
-        ('7', 1, 0), ('8', 1, 1), ('9', 1, 2), ('/', 1, 3),
-        ('4', 2, 0), ('5', 2, 1), ('6', 2, 2), ('*', 2, 3),
-        ('1', 3, 0), ('2', 3, 1), ('3', 3, 2), ('-', 3, 3),
-        ('0', 4, 0), ('.', 4, 1), ('+', 4, 2), ('=', 4, 3)
-    ]
-
-    for text, row, col in botones:
-        tk.Button(ventana, text=text, font=("Arial", 14), width=5, height=2,
-                  command=lambda t=text: click_boton(t) if t != "=" else calcular()).grid(row=row, column=col)
-
-def abrir_calculadora_cientifica():
-    """Calculadora científica con funciones avanzadas."""
-    def calcular():
-        try:
-            operacion = entrada.get()
-            resultado = eval(operacion, {"math": math})
-            resultado_var.set(resultado)
-            guardar_operacion(operacion, resultado)
-        except:
-            messagebox.showerror("Error", "Operación no válida")
-
-    ventana = tk.Toplevel(root)
-    ventana.title("Calculadora Científica")
-    entrada = tk.StringVar()
-    resultado_var = tk.StringVar()
-
-    tk.Entry(ventana, textvariable=entrada, font=("Arial", 18), width=15, justify="right").grid(row=0, column=0, columnspan=4)
-    tk.Label(ventana, textvariable=resultado_var, font=("Arial", 18), bg="lightgray", width=15).grid(row=1, column=0, columnspan=4)
-
-    funciones = {
-        "sin": "math.sin(", "cos": "math.cos(", "tan": "math.tan(",
-        "√": "math.sqrt(", "^": "**", "log": "math.log10("
+    ventana.title(titulo)
+    ventana.geometry(tamaño)
+    return ventana
+def abrir_calculadora(tipo):
+    ventana = crear_ventana(f"Calculadora {tipo}")
+    entrada, resultado_var = tk.StringVar(), tk.StringVar()
+    tk.Entry(ventana, textvariable=entrada, font=("Arial", 18), width=20, justify="right").pack(pady=10)
+    tk.Label(ventana, textvariable=resultado_var, font=("Arial", 18), bg="lightgray", width=20).pack(pady=5)
+    
+    # Diccionario con funciones matemáticas permitidas
+    funciones_permitidas = {
+        "sin": math.sin, "cos": math.cos, "tan": math.tan,
+        "log": math.log10, "sqrt": math.sqrt, "exp": math.exp,
+        "pi": math.pi, "e": math.e, "pow": pow
     }
 
-    def insertar_funcion(func):
-        entrada.set(entrada.get() + funciones[func])
+    def calcular():
+        try:
+            expresion = entrada.get().replace("^", "**")  # Reemplazar ^ por **
+            resultado = eval(expresion, {"__builtins__": None}, funciones_permitidas)
+            resultado_var.set(resultado)
+            guardar_operacion(expresion, resultado)
+        except Exception as e:
+            messagebox.showerror("Error", f"Operación no válida: {e}")
 
-    botones = [
+    botones_basicos = [
         ('7', '8', '9', '/'), ('4', '5', '6', '*'),
-        ('1', '2', '3', '-'), ('0', '.', '=', '+'),
-        ('sin', 'cos', 'tan', '√'), ('^', 'log', '(', ')')
+        ('1', '2', '3', '-'), ('0', '.', '+', '=')
     ]
+    funciones_cientificas = ['sin', 'cos', 'tan', 'log', 'sqrt', 'exp', 'pi', 'e']
 
-    for i, fila in enumerate(botones):
-        for j, text in enumerate(fila):
-            comando = lambda t=text: entrada.set(entrada.get() + t) if t not in funciones else insertar_funcion(t)
-            if text == "=":
-                comando = calcular
-            tk.Button(ventana, text=text, font=("Arial", 14), width=5, height=2, command=comando).grid(row=i + 2, column=j)
+    # Botones de la calculadora básica
+    for fila in botones_basicos:
+        frame = tk.Frame(ventana)
+        frame.pack()
+        for text in fila:
+            tk.Button(frame, text=text, font=("Arial", 14), width=5, height=2,
+                      command=lambda t=text: entrada.set(entrada.get() + t) if t != "=" else calcular()).pack(side=tk.LEFT)
+
+    # Botones de la calculadora científica
+    if tipo == "Científica":
+       frame = tk.Frame(ventana)
+       frame.pack()
+       for func in funciones_cientificas:
+           tk.Button(frame, text=func, font=("Arial", 12), width=5,
+                     command=lambda f=func: entrada.set(entrada.get() + f)).pack(side=tk.LEFT)
+
 
 def abrir_calculadora_grafica():
-    """Calculadora para graficar funciones."""
+    ventana = crear_ventana("Calculadora Gráfica")
+    entrada = tk.StringVar()
+    tk.Label(ventana, text="Ingrese una función de x:").pack(pady=5)
+    tk.Entry(ventana, textvariable=entrada, font=("Arial", 14), width=20).pack(pady=5)
+
     def graficar():
         try:
-            expresion = entrada.get()
+            expresion = entrada.get().replace("^", "**")
             x = np.linspace(-10, 10, 400)
-            y = [eval(expresion, {"x": val, "math": math}) for val in x]
+            funciones = {
+                "x": x, "sin": np.sin, "cos": np.cos, "tan": np.tan,
+                "sqrt": np.sqrt, "log": np.log10, "exp": np.exp,
+                "abs": np.abs, "pi": np.pi, "e": np.e
+            }
+            y = eval(expresion, {"__builtins__": None}, funciones)
 
             plt.figure()
             plt.plot(x, y, label=f"y = {expresion}")
@@ -115,102 +90,44 @@ def abrir_calculadora_grafica():
             plt.legend()
             plt.grid()
             plt.show()
+
+            guardar_operacion(f"y={expresion}", "Gráfica generada")
         except Exception as e:
             messagebox.showerror("Error", f"Expresión no válida: {e}")
 
-    ventana = tk.Toplevel(root)
-    ventana.title("Calculadora Gráfica")
-
-    tk.Label(ventana, text="Ingrese una función de x:").pack(pady=5)
-    entrada = tk.StringVar()
-    tk.Entry(ventana, textvariable=entrada, font=("Arial", 14), width=20).pack(pady=5)
     tk.Button(ventana, text="Graficar", font=("Arial", 14), command=graficar).pack(pady=10)
 
-#Historial
 def mostrar_historial():
-    """Muestra el historial de operaciones guardadas en Firebase."""
-    ventana = tk.Toplevel(root)
-    ventana.title("Historial de Operaciones")
-    ventana.geometry("400x300")
-
+    ventana = crear_ventana("Historial de Operaciones", "400x300")
     historial = ref.order_by_child('timestamp').limit_to_last(10).get()
-    if historial and isinstance(historial, dict):
-        for key, valor in historial.items():
-            tk.Label(ventana, text=f"{valor.get('operacion', '?')} = {valor.get('resultado', '?')}", font=("Arial", 12)).pack()
-    else:
-        tk.Label(ventana, text="No hay historial reciente disponible.", font=("Arial", 12)).pack()
 
-#Historial
+    # Si historial es None, mostrar mensaje de error
+    if not historial:
+        texto_historial = "No hay historial disponible."
+    else:
+        # Asegurar que cada valor en historial no sea None
+        texto_historial = "\n".join(
+            f"{v.get('operacion', 'Desconocida')} = {v.get('resultado', 'Error')}"
+            for v in historial.values() if v
+        )
+
+    tk.Label(ventana, text=texto_historial, font=("Arial", 12), justify="left").pack(pady=10, padx=10)
+
+# INTERFAZ PRINCIPAL
 root = tk.Tk()
 root.title("Calculadoras con Firebase")
 root.geometry("300x400")
 
-ttk.Button(root, text="Calculadora Básica", command=abrir_calculadora_basica).pack(pady=10)
-ttk.Button(root, text="Calculadora Científica", command=abrir_calculadora_cientifica).pack(pady=10)
-ttk.Button(root, text="Calculadora Gráfica", command=abrir_calculadora_grafica).pack(pady=10)
-ttk.Button(root, text="Ver Historial", command=mostrar_historial).pack(pady=10)
+botones = [
+    ("Calculadora Básica", lambda: abrir_calculadora("Básica")),
+    ("Calculadora Científica", lambda: abrir_calculadora("Científica")),
+    ("Calculadora Gráfica", abrir_calculadora_grafica),
+    ("Ver Historial", mostrar_historial)
+]
+
+for text, command in botones:
+    ttk.Button(root, text=text, command=command).pack(pady=10)
 
 root.mainloop()
 
-##2
 
-import tkinter as tk 
-from tkinter import ttk 
-
-root = tk.Tk() 
-root.title("Calculadora Tkinter") 
-root.geometry("400x300") 
-
-notebook = ttk.Notebook(root) 
-notebook.pack(expand=True, fill="both") 
-
-frame_calc = tk.Frame(notebook) 
-frame_conv = tk.Frame(notebook) 
-frame_hist = tk.Frame(notebook) 
-
-notebook.add(frame_calc, text="Calculadora") 
-notebook.add(frame_conv, text="Conversor") 
-notebook.add(frame_hist, text="Historial") 
-
-historial = [] 
-
-tk.Label(frame_calc, text="Número 1:").pack() 
-entry1 = tk.Entry(frame_calc)
-entry1.pack()
-
-tk.Label(frame_calc, text="Número 2:").pack() 
-entry2 = tk.Entry(frame_calc) 
-entry2.pack() 
-
-label_resultado = tk.Label(frame_calc, text="Resultado:") 
-label_resultado.pack() 
-
-def calcular(operacion):
-    try: 
-        num1, num2 = float(entry1.get()), float(entry2.get())
-        resultado = eval(f"{num1} {operacion} {num2}") if operacion != "/" or num2 != 0 else "Error"
-        label_resultado.config(text=f"Resultado: {resultado}") 
-        historial.append(f"{num1} {operacion} {num2} = {resultado}")
-    except ValueError: 
-        label_resultado.config(text="Ingrese valores válidos") 
-for op in ["+", "-", "*", "/"]: 
-    tk.Button(frame_calc, text=op, command=lambda o=op: calcular(o)).pack(side="left", padx=5) 
-tk.Label(frame_conv, text="Metros:").pack() 
-entry_metros = tk.Entry(frame_conv) 
-entry_metros.pack() 
-label_conversion = tk.Label(frame_conv, text="0 km") 
-label_conversion.pack() 
-def convertir(): 
-    try: 
-        km = float(entry_metros.get()) / 1000 
-        label_conversion.config(text=f"{km} km") 
-    except ValueError: label_conversion.config(text="Ingrese un número válido") 
-tk.Button(frame_conv, text="Convertir", command=convertir).pack() 
-tk.Label(frame_hist, text="Historial de operaciones:").pack() 
-text_historial = tk.Text(frame_hist, height=10, width=40) 
-text_historial.pack() 
-def actualizar_historial(): 
-    text_historial.delete("1.0", tk.END) 
-    text_historial.insert(tk.END, "\n".join(historial)) 
-tk.Button(frame_hist, text="Actualizar", command=actualizar_historial).pack()
-root.mainloop() 
